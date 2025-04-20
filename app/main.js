@@ -9,14 +9,10 @@ const server = net.createServer((socket) => {
         socket.end();
     });
     socket.on("data", (data) => {
-        const requestData = data.toString();
-        const requestHeaders = requestData.split("\r\n");
-        const requestPath =requestHeaders[0].split(" ")[1];
-        if (requestPath == "/") {
-            socket.write("HTTP/1.1 200 OK\r\n\r\n");
-        } else {
-            socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-        }
+        const requestHeaders = data.toString().split("\r\n");
+        const stringToReturn = requestHeaders[0].split(" ")[1].split("/")[2];
+        const response = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
+        socket.write(response);
         socket.end()
     });
 });
