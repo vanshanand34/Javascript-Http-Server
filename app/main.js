@@ -10,7 +10,14 @@ const server = net.createServer((socket) => {
     });
     socket.on("data", (data) => {
         const requestHeaders = data.toString().split("\r\n");
-        const stringToReturn = requestHeaders[0].split(" ")[1].split("/")[2];
+        const requestPath = requestHeaders[0].split(" ")[1].split("/");
+        if (requestPath.length < 3 || requestPath[1] !== "echo") {
+            const response = `HTTP/1.1 404 Not Found\r\n\r\n`;
+            socket.write(response);
+            socket.end();
+            return;
+        }
+        const stringToReturn = requestPath[2];
         const response = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
         socket.write(response);
         socket.end()
