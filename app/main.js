@@ -1,11 +1,17 @@
 const net = require("net");
+const fs = require("fs");
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
 
-function getContentWithLength(stringToReturn) {
-    const response = `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
+function getContentWithLength(stringToReturn, contentType = "text/plain") {
+    const response = `HTTP/1.1 200 OK\r\nContent-Type: ${contentType}\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
     return response;
+}
+
+function getFileContent(path) {
+    const file = fs.readFileSync(path, 'utf-8');
+    return file;
 }
 
 // Uncomment this to pass the first stage
@@ -23,7 +29,7 @@ const server = net.createServer((socket) => {
             socket.end();
             return;
         }
-        else if (requestPath.includes("echo") && requestPath.split("/echo/").length == 2) {
+        else if (requestPath.includes("/echo/")) {
             const stringToReturn = requestPath.split("/echo/")[1];
             socket.write(getContentWithLength(stringToReturn));
             socket.end()
@@ -40,9 +46,13 @@ const server = net.createServer((socket) => {
             socket.write(getContentWithLength(userAgent));
             socket.end();
         }
+        else if (requestPath == "/files/foo" || requestPath == "/files/foo/") {
+            const fileContent = getFileContent("./files/foo.txt");
+            socket.write(getContentWithLength(fileContent, "application/octet-stream"));
+            socket.end();
+        }
         else {
-            const response = `HTTP/1.1 404 Not Found\r\n\r\n`;
-            socket.write(response);
+            socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
             socket.end();
             return;
         }
