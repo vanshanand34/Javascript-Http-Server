@@ -70,7 +70,7 @@ const server = net.createServer((socket) => {
                     }
                 } else if (request.split(" ")[0] == "POST") {
                     const requestBody = requestData[requestData.length - 1];
-                    const file = fs.writeFileSync(`${directory}/${fileRequested}.txt`, requestBody);
+                    fs.writeFileSync(`${directory}/${fileRequested}`, requestBody);
                     socket.write("HTTP/1.1 201 Created\r\n\r\n");
                     socket.end();
                     return;
