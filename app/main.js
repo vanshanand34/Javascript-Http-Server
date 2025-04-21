@@ -22,11 +22,10 @@ const server = net.createServer((socket) => {
         socket.end();
     });
     socket.on("data", (data) => {
+        const request = data.toString();
+        const requestData = request.split("\r\n");
+        const requestPath = requestData[0].split(" ")[1];
         try {
-            const request = data.toString();
-            const requestData = request.split("\r\n");
-            const requestPath = requestData[0].split(" ")[1];
-
             if (requestPath == "/") {
                 socket.write("HTTP/1.1 200 OK\r\n\r\n");
             }
@@ -72,10 +71,21 @@ const server = net.createServer((socket) => {
                 socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
             }
 
+            for (const header of requestData) {
+                if (header.includes("Connection: close")) {
+                    console.log("Connection closed");
+                    socket.end();
+                    socket.resetAndDestroy();
+                    return;
+                }
+            }
+
         } catch (err) {
             console.log(err);
             socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
+            socket.end();
         }
+
     });
 });
 
