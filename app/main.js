@@ -5,8 +5,8 @@ const fs = require("fs");
 console.log("Logs from your program will appear here!");
 
 
-function getContentWithLength(stringToReturn, contentType = "text/plain") {
-    const response = `HTTP/1.1 200 OK\r\nContent-Type: ${contentType}\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
+function getContentWithLength(stringToReturn, closeConnectionHeader = "", contentType = "text/plain") {
+    const response = `HTTP/1.1 200 OK\r\nContent-Type: ${contentType}\r\nContent-Length: ${stringToReturn.length}${closeConnectionHeader}\r\n\r\n${stringToReturn}`
     return response;
 }
 
@@ -25,13 +25,22 @@ const server = net.createServer((socket) => {
         const request = data.toString();
         const requestData = request.split("\r\n");
         const requestPath = requestData[0].split(" ")[1];
+        let closeConnectionHeader = "";
+
+        for (const header of requestData) {
+            if (header.includes("Connection: close")) {
+                closeConnectionHeader = "\r\nConnection: close";
+            }
+        }
+        // console.log(requestData, closeConnectionHeader);
+
         try {
             if (requestPath == "/") {
-                socket.write("HTTP/1.1 200 OK\r\n\r\n");
+                socket.write(`HTTP/1.1 200 OK${closeConnectionHeader}\r\n\r\n`);
             }
             else if (requestPath.includes("/echo/")) {
                 const stringToReturn = requestPath.split("/echo/")[1];
-                socket.write(getContentWithLength(stringToReturn));
+                socket.write(getContentWithLength(stringToReturn, closeConnectionHeader));
             }
             else if (requestPath.includes("user-agent")) {
                 let userAgent = "";
@@ -41,7 +50,7 @@ const server = net.createServer((socket) => {
                         break;
                     }
                 }
-                socket.write(getContentWithLength(userAgent));
+                socket.write(getContentWithLength(userAgent, closeConnectionHeader));
             }
             else if (requestPath.startsWith("/files/")) {
                 const directory = process.argv[3];
@@ -57,27 +66,24 @@ const server = net.createServer((socket) => {
                     }
                     if (fileFound) {
                         const fileContent = getFileContent(`${directory}/${fileFound}`);
-                        socket.write(getContentWithLength(fileContent, "application/octet-stream"));
+                        socket.write(getContentWithLength(fileContent, closeConnectionHeader, "application/octet-stream"));
                     } else {
-                        socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
+                        socket.write(`HTTP/1.1 404 Not Found${closeConnectionHeader}\r\n\r\n`);
                     }
                 } else if (request.split(" ")[0] == "POST") {
                     const requestBody = requestData[requestData.length - 1];
                     fs.writeFileSync(`${directory}/${fileRequested}`, requestBody);
-                    socket.write("HTTP/1.1 201 Created\r\n\r\n");
+                    socket.write(`HTTP/1.1 201 Created${closeConnectionHeader}\r\n\r\n`);
                     return;
                 }
             } else {
-                socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
+                socket.write(`HTTP/1.1 404 Not Found${closeConnectionHeader}\r\n\r\n`);
             }
 
-            for (const header of requestData) {
-                if (header.includes("Connection: close")) {
-                    console.log("Connection closed");
-                    socket.end();
-                    socket.resetAndDestroy();
-                    return;
-                }
+            if (closeConnectionHeader != "") {
+                socket.end();
+                socket.resetAndDestroy();
+                return;
             }
 
         } catch (err) {
