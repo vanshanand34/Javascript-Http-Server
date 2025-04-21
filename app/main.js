@@ -29,14 +29,10 @@ const server = net.createServer((socket) => {
 
             if (requestPath == "/") {
                 socket.write("HTTP/1.1 200 OK\r\n\r\n");
-                socket.end();
-                return;
             }
             else if (requestPath.includes("/echo/")) {
                 const stringToReturn = requestPath.split("/echo/")[1];
                 socket.write(getContentWithLength(stringToReturn));
-                socket.end()
-                return;
             }
             else if (requestPath.includes("user-agent")) {
                 let userAgent = "";
@@ -47,8 +43,6 @@ const server = net.createServer((socket) => {
                     }
                 }
                 socket.write(getContentWithLength(userAgent));
-                socket.end();
-                return;
             }
             else if (requestPath.startsWith("/files/")) {
                 const directory = process.argv[3];
@@ -65,25 +59,22 @@ const server = net.createServer((socket) => {
                     if (fileFound) {
                         const fileContent = getFileContent(`${directory}/${fileFound}`);
                         socket.write(getContentWithLength(fileContent, "application/octet-stream"));
-                        socket.end();
-                        return;
+                    } else {
+                        socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
                     }
                 } else if (request.split(" ")[0] == "POST") {
                     const requestBody = requestData[requestData.length - 1];
                     fs.writeFileSync(`${directory}/${fileRequested}`, requestBody);
                     socket.write("HTTP/1.1 201 Created\r\n\r\n");
-                    socket.end();
                     return;
                 }
+            } else {
+                socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
             }
-
-            socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
-            socket.end();
 
         } catch (err) {
             console.log(err);
             socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
-            socket.end();
         }
     });
 });
