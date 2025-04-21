@@ -3,7 +3,15 @@ const fs = require("fs");
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
-console.log("arguments: ", process.argv);
+
+let directory;
+let files;
+if (process.argv.length < 4) {
+    directory = "";
+} else {
+    directory = process.argv[3];
+    files = fs.readdirSync(directory);
+}
 
 function getContentWithLength(stringToReturn, contentType = "text/plain") {
     const response = `HTTP/1.1 200 OK\r\nContent-Type: ${contentType}\r\nContent-Length: ${stringToReturn.length}\r\n\r\n${stringToReturn}`
@@ -22,7 +30,6 @@ const server = net.createServer((socket) => {
         socket.end();
     });
     socket.on("data", (data) => {
-        console.log("arguments: ", process.argv);
         const requestHeaders = data.toString().split("\r\n");
         const requestPath = requestHeaders[0].split(" ")[1];
 
@@ -48,17 +55,25 @@ const server = net.createServer((socket) => {
             socket.write(getContentWithLength(userAgent));
             socket.end();
         }
-        else if (requestPath == "/files") {
-            console.log("directory", process.argv);
-            const fileContent = getFileContent("./files/foo.txt");
-            socket.write(getContentWithLength(fileContent, "application/octet-stream"));
-            socket.end();
+        else if (requestPath.includes("/files/") && directory !== "") {
+            const fileRequested = requestPath.split("/files/")[1];
+            let fileFound = "";
+            for (const file of files) {
+                if (fileRequested == file.split(".")[0]) {
+                    fileFound = file;
+                    break;
+                }
+            }
+            if (fileFound){
+                const fileContent = getFileContent(`${directory}/${fileFound}`);
+                socket.write(getContentWithLength(fileContent, "application/octet-stream"));
+                socket.end();
+                return;
+            }
         }
-        else {
-            socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
-            socket.end();
-            return;
-        }
+
+        socket.write(`HTTP/1.1 404 Not Found\r\n\r\n`);
+        socket.end();
     });
 });
 
