@@ -82,7 +82,8 @@ const server = net.createServer((socket) => {
             console.log(closeConnectionHeader);
             if (closeConnectionHeader != "") {
                 socket.end();
-                socket.resetAndDestroy();
+                socket.destroy();
+                console.log("`Connection: close` header detected, closing connection");
                 return;
             }
 
