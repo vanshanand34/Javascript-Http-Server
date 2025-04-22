@@ -79,6 +79,7 @@ const server = net.createServer((socket) => {
                 socket.write(`HTTP/1.1 404 Not Found${closeConnectionHeader}\r\n\r\n`);
             }
 
+            console.log(closeConnectionHeader);
             if (closeConnectionHeader != "") {
                 socket.end();
                 socket.resetAndDestroy();
