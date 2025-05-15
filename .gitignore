@@ -1,4 +1,6 @@
 node_modules/
 .codecrafters/
 *.yml
-*.json*.sh
+*.json
+*.sh
+*.gitattributes
